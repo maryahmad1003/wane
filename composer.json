@@ -1,0 +1,22 @@
+{
+    "name": "mary/appwoyofal2",
+    "autoload": {
+        "psr-4": {
+            "mary\\Appwoyofal\\": "src/"
+        },
+        "classmap": [
+            "app/",
+            "src/"
+        ]
+    },
+    "authors": [
+        {
+            "name": "mary1234",
+            "email": "vonnemary19@gmail.com"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "symfony/yaml": "^7.3"
+    }
+}
