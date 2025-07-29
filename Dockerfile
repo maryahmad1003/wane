@@ -1,50 +1,50 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.3-fpm
 
-# Installation des dépendances système
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    postgresql-dev \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
     zip \
     unzip \
-    git \
-    curl
+    libpq-dev \
+    nginx \
+    supervisor
 
-# Installation des extensions PHP
-RUN docker-php-ext-install \
-    pdo \
-    pdo_pgsql \
-    pgsql
+# Clear cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installation de Composer
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd
+
+# Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configuration du répertoire de travail
+# Set working directory
 WORKDIR /var/www/html
 
-# Copie des fichiers de l'application
-COPY . .
+# Copy application files
+COPY . /var/www/html
 
-# Installation des dépendances PHP
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Configuration des permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+# Copy nginx configuration
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
-# Configuration Nginx
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/conf.d/default.conf
-
-# Configuration Supervisor
+# Copy supervisor configuration
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Script de démarrage
-COPY docker/start.sh /start.sh
-RUN chmod +x /start.sh
+# Create nginx directories and set permissions
+RUN mkdir -p /var/log/nginx /var/lib/nginx/body /var/lib/nginx/fastcgi \
+    && chown -R www-data:www-data /var/www/html \
+    && chown -R www-data:www-data /var/log/nginx
 
-# Exposition du port
+# Expose port
 EXPOSE 80
 
-# Commande de démarrage
-CMD ["/start.sh"]
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
